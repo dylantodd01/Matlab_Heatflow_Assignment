@@ -28,11 +28,11 @@ filename = sprintf("tile_data/temp%d.mat", tile_number);
 load(filename, 'tempData');
 load(filename, 'timeData');
 
+% Convert Fahreneheit to Kelvin
+tempData = ((tempData - 32) * (5 / 9)) + 273.15;
+
 % Set tile properties
 alpha = (thermCon)/(density * specHeat);
-
-% Convert tempData to degrees Celcius
-tempData = (tempData - 32) / 1.8;
 
 % Initialise everything.
 dt = tmax / (nt - 1);
@@ -47,12 +47,16 @@ u = zeros(nt, nx);
 L = interp1(timeData, tempData, t, 'linear', 'extrap');
 
 % Set initial conditions equal to boundary temperature at t=0.
-u(1, :) = L(1);
-u(:, 1) = L; % Outside boundary condition
-u(:, nx) = 0; % Inside boundary condition; set to zero as a starting point
+u(:, 1) = L;
+u(:, nx) = 0;
 
-i = 2:nx-1; % Set up an index vector
 
+% Set up an index vector
+im = 1:nx-1;    
+
+i  = 2:nx;     
+
+ip = [3:nx nx-1];  
 % Interpolate to find the temp data at all the required time intervals        
 a = zeros(size(i));
 b = zeros(size(i));
@@ -66,7 +70,7 @@ switch method
         for n=1:nt-1
 
             % Calculate internal values using forward differencing
-            u(n+1,i) = (1 - 2 * p) * u(n,i) + p * (u(n,i-1) + u(n,i+1));
+            u(n+1, i) = (1 - 2 * p) * u(n, i) + p * (u(n, im) + u(n, ip));
         end
 
     case 'Dufort-Frankel'
@@ -82,43 +86,45 @@ switch method
 
             % Calculate internal values using forward differencing
             % This has been done using vector algebra
-            u(n+1,i) = ((1-2*p)*u(nminus1,i) + 2*p * (u(n,i-1) + u(n,i+1)))/(1+2*p);
+            u(n+1,i) = (u(nminus1,i)*(1-2*p) + 2*p*(u(n,im)+u(n,ip)))/(1+2*p);
         end
 
 
     case 'Backward Differencing'
-        for n=1:nt-1
-            R = interp1(timeData, tempData, t(n+1), 'linear','extrap');
-            
+        for n=2:nt-1
+                      
             % Calculate internal values using backward differencing
             b(1) = 1;
             c(1) = 0;
-            d(1) = R;
+            d(1) = L(n+1);
+            
             a(i) = -p;
             b(i) = 1 + 2*p;
             c(i) = -p;
             d(i) = u(n,i);
-            a(nx) = 0;
-            b(nx) = 1;
-            d(nx) = 0;
+            
+            a(nx) = -2 * p;
+            b(nx) = 1 + 2*p;
+            d(nx) = u(n, nx);
 
             u(n+1,:) = tdm(a,b,c,d);
         end
     case 'Crank-Nicolson'
         for n=1:nt-1
-            R = interp1(timeData, tempData, t(n+1), 'linear','extrap');
-            
+                        
             % Calculate internal values using backward differencing
             b(1) = 1;
             c(1) = 0;
-            d(1) = R;
+            d(1) = L(n+1);
+            
             a(i) = -p/2;
             b(i) = 1+p;
             c(i) = -p/2;
-            d(i) = (p/2)*u(n,i-1) + (1-p)*u(n,i) +(p/2)*u(n,i+1);
-            a(nx) = 0;
-            b(nx) = 1;
-            d(nx) = 0;
+            d(i) = (p/2)*u(n,im) + (1-p)*u(n,i) +(p/2)*u(n,ip);
+            
+            a(nx) = -p;
+            b(nx) = 1+p;
+            d(nx) = p * u(n,nx-1) +(1-p) * (u(n,nx));
             
             u(n+1,:) = tdm(a,b,c,d);
         end

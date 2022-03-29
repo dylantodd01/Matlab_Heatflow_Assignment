@@ -13,7 +13,11 @@ tmax = 4000;
 
 thick = 0.05;
 i = 0;
-for nx = 2:2:30
+uf = [];
+ud = [];
+ub = [];
+uc = [];
+for nx = 2:2:40
     % Calculate new dt value and add it to dt vector
     i = i + 1;
     dx(i) = thick/(nx-1);
@@ -22,24 +26,25 @@ for nx = 2:2:30
     
     [~, ~, u] = shuttle(tmax, nt, thick, nx, 'Forward Differencing', ...
         tile_number, thermCon, density, specHeat);
-    uf(i) = u(end, nx);
+    uf(end+1) = u(end, nx);
     
     [~, ~, u] = shuttle(tmax, nt, thick, nx, 'Dufort-Frankel', ...
         tile_number, thermCon, density, specHeat);
-    ud(i) = u(end, nx);
+    ud(end+1) = u(end, nx);
     
     [~, ~, u] = shuttle(tmax, nt, thick, nx, 'Backward Differencing', ...
         tile_number, thermCon, density, specHeat);
-    ub(i) = u(end, nx);
+    ub(end+1) = u(end, nx);
     
     [~, ~, u] = shuttle(tmax, nt, thick, nx, 'Crank-Nicolson', ...
         tile_number, thermCon, density, specHeat);
-    uc(i) = u(end, nx);
+    uc(end+1) = u(end, nx);
+
 end
-plot(dt, [uf; ud; ub; uc]);
+plot(dx, [uf; ud; ub; uc]);
 grid on
-xlim([0 30])
-ylim([300 400])
+xlim([0 0.01])
+ylim([300 380])
 xlabel('Spacial Step dx (m)')
 ylabel('Inner Surface Temperature (K)')
 legend('Forward', 'Dufort-Frankel', 'Backward Differencing', 'Crank-Nicolson')

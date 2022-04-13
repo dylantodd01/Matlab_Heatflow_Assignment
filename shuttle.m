@@ -1,7 +1,7 @@
 function [x, t, u] = shuttle(tmax, nt, xmax, nx, method, tile_number, thermCon, density, specHeat)
 % Function for modelling temperature in a space shuttle tile
 % Originally from D N Johnston  18/02/22
-% 
+%
 %
 % Input arguments:
 % tmax   - maximum time (s)
@@ -20,7 +20,7 @@ function [x, t, u] = shuttle(tmax, nt, xmax, nx, method, tile_number, thermCon, 
 % u      - temperature matrix (C or K)
 
 
-% Run scan graphs function to get all data from all graphs  
+% Run scan graphs function to get all data from all graphs
 scangraphs
 
 % Retrieve relevant tile data file
@@ -52,12 +52,12 @@ u(:, nx) = 0;
 
 
 % Set up an index vector
-im = 1:nx-1;    
+im = 1:nx-1;
 
-i  = 2:nx;     
+i  = 2:nx;
 
-ip = [3:nx nx-1];  
-% Interpolate to find the temp data at all the required time intervals        
+ip = [3:nx nx-1];
+% Interpolate to find the temp data at all the required time intervals
 a = zeros(size(i));
 b = zeros(size(i));
 c = zeros(size(i));
@@ -92,17 +92,17 @@ switch method
 
     case 'Backward Differencing'
         for n=2:nt-1
-                      
+
             % Calculate internal values using backward differencing
             b(1) = 1;
             c(1) = 0;
             d(1) = L(n+1);
-            
+
             a(i) = -p;
             b(i) = 1 + 2*p;
             c(i) = -p;
             d(i) = u(n,i);
-            
+
             a(nx) = -2 * p;
             b(nx) = 1 + 2*p;
             d(nx) = u(n, nx);
@@ -111,23 +111,26 @@ switch method
         end
     case 'Crank-Nicolson'
         for n=1:nt-1
-                        
+
             % Calculate internal values using backward differencing
             b(1) = 1;
             c(1) = 0;
             d(1) = L(n+1);
-            
+
             a(i) = -p/2;
             b(i) = 1+p;
             c(i) = -p/2;
             d(i) = (p/2)*u(n,im) + (1-p)*u(n,i) +(p/2)*u(n,ip);
-            
+
             a(nx) = -p;
             b(nx) = 1+p;
             d(nx) = p * u(n,nx-1) +(1-p) * (u(n,nx));
-            
+
             u(n+1,:) = tdm(a,b,c,d);
         end
     otherwise
         error (['Undefined method: ' method])
+
+    waterfall(x ,t, u)
+    view(130,30)
 end
